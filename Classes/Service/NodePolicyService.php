@@ -27,6 +27,7 @@ use Neos\Flow\Security\Authorization\Privilege\PrivilegeInterface;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
 use Neos\Flow\Security\Policy\PolicyService;
 use Neos\Neos\Security\Authorization\Privilege\NodeTreePrivilege;
+use Neos\Neos\Security\Authorization\Privilege\ReadNodeTreePrivilege;
 
 /**
  * @Flow\Scope("singleton")
@@ -93,8 +94,18 @@ class NodePolicyService
      */
     public function isNodeTreePrivilegeGranted(NodeInterface $node): bool
     {
-        if (!isset(self::getUsedPrivilegeClassNames($this->objectManager)[NodeTreePrivilege::class])) {
+        $usedPrivilegeClassNames = self::getUsedPrivilegeClassNames($this->objectManager);
+        if (!isset($usedPrivilegeClassNames[NodeTreePrivilege::class])
+            && !isset($usedPrivilegeClassNames[ReadNodeTreePrivilege::class])
+        ) {
             return true;
+        }
+
+        if (isset($usedPrivilegeClassNames[ReadNodeTreePrivilege::class])) {
+            return $this->privilegeManager->isGranted(
+                ReadNodeTreePrivilege::class,
+                new NodePrivilegeSubject($node)
+            );
         }
 
         return $this->privilegeManager->isGranted(
